@@ -100,50 +100,60 @@ let initPromise: Promise<void> | null = null;
 async function ensureSchema(): Promise<void> {
   if (!initPromise) {
     initPromise = (async () => {
-      await sql()`
-        CREATE TABLE IF NOT EXISTS alerts (
-          id TEXT PRIMARY KEY,
-          name TEXT NOT NULL,
-          origin_address TEXT NOT NULL,
-          destination_address TEXT NOT NULL,
-          enabled BOOLEAN NOT NULL DEFAULT TRUE,
-          max_duration_minutes INTEGER NULL,
-          min_delay_minutes INTEGER NULL,
-          severe_weather_required BOOLEAN NOT NULL DEFAULT FALSE,
-          incident_keyword_filter TEXT NULL,
-          days_of_week_csv TEXT NOT NULL DEFAULT '1,2,3,4,5',
-          start_time TEXT NOT NULL DEFAULT '06:00',
-          end_time TEXT NOT NULL DEFAULT '10:00',
-          cooldown_minutes INTEGER NOT NULL DEFAULT 45,
-          min_consecutive_triggers INTEGER NOT NULL DEFAULT 1,
-          sms_enabled BOOLEAN NOT NULL DEFAULT FALSE,
-          push_enabled BOOLEAN NOT NULL DEFAULT TRUE,
-          sms_phone_number TEXT NULL,
-          last_notified_at TIMESTAMPTZ NULL,
-          last_triggered_at TIMESTAMPTZ NULL,
-          consecutive_trigger_count INTEGER NOT NULL DEFAULT 0,
-          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-        );
-      `;
-      await sql()`
-        CREATE TABLE IF NOT EXISTS alert_checks (
-          id TEXT PRIMARY KEY,
-          alert_id TEXT NOT NULL REFERENCES alerts(id) ON DELETE CASCADE,
-          checked_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-          triggered BOOLEAN NOT NULL,
-          trigger_reasons TEXT NOT NULL,
-          travel_duration_minutes INTEGER NOT NULL,
-          baseline_duration_minutes INTEGER NOT NULL,
-          delay_minutes INTEGER NOT NULL,
-          weather_summary TEXT NOT NULL,
-          incident_summary TEXT NOT NULL
-        );
-      `;
-      await sql()`CREATE INDEX IF NOT EXISTS idx_alert_checks_alert_id_checked_at ON alert_checks(alert_id, checked_at DESC);`;
+      await sql()`SELECT pg_advisory_lock(927130221)`;
+      try {
+        await sql()`
+          CREATE TABLE IF NOT EXISTS alerts (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            origin_address TEXT NOT NULL,
+            destination_address TEXT NOT NULL,
+            enabled BOOLEAN NOT NULL DEFAULT TRUE,
+            max_duration_minutes INTEGER NULL,
+            min_delay_minutes INTEGER NULL,
+            severe_weather_required BOOLEAN NOT NULL DEFAULT FALSE,
+            incident_keyword_filter TEXT NULL,
+            days_of_week_csv TEXT NOT NULL DEFAULT '1,2,3,4,5',
+            start_time TEXT NOT NULL DEFAULT '06:00',
+            end_time TEXT NOT NULL DEFAULT '10:00',
+            cooldown_minutes INTEGER NOT NULL DEFAULT 45,
+            min_consecutive_triggers INTEGER NOT NULL DEFAULT 1,
+            sms_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+            push_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+            sms_phone_number TEXT NULL,
+            last_notified_at TIMESTAMPTZ NULL,
+            last_triggered_at TIMESTAMPTZ NULL,
+            consecutive_trigger_count INTEGER NOT NULL DEFAULT 0,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+          );
+        `;
+        await sql()`
+          CREATE TABLE IF NOT EXISTS alert_checks (
+            id TEXT PRIMARY KEY,
+            alert_id TEXT NOT NULL REFERENCES alerts(id) ON DELETE CASCADE,
+            checked_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            triggered BOOLEAN NOT NULL,
+            trigger_reasons TEXT NOT NULL,
+            travel_duration_minutes INTEGER NOT NULL,
+            baseline_duration_minutes INTEGER NOT NULL,
+            delay_minutes INTEGER NOT NULL,
+            weather_summary TEXT NOT NULL,
+            incident_summary TEXT NOT NULL
+          );
+        `;
+        await sql()`CREATE INDEX IF NOT EXISTS idx_alert_checks_alert_id_checked_at ON alert_checks(alert_id, checked_at DESC);`;
+      } finally {
+        await sql()`SELECT pg_advisory_unlock(927130221)`;
+      }
     })();
   }
-  return initPromise;
+  try {
+    await initPromise;
+  } catch (error) {
+    initPromise = null;
+    throw error;
+  }
 }
 
 function mapAlert(row: AlertRow): Alert {
