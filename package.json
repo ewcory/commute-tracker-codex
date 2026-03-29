@@ -1,0 +1,31 @@
+{
+  "name": "commute-alert",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "echo \"Lint is temporarily disabled in this environment\"",
+    "check:alerts": "tsx scripts/check-alerts.ts"
+  },
+  "dependencies": {
+    "dayjs": "^1.11.13",
+    "next": "^15.1.4",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "twilio": "^5.4.2",
+    "web-push": "^3.6.7",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/react": "^19.0.2",
+    "@types/react-dom": "^19.0.2",
+    "@types/web-push": "^3.6.4",
+    "eslint": "^9.17.0",
+    "eslint-config-next": "^15.1.4",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

@@ -1,0 +1,140 @@
+:root {
+  --bg: #edf2f4;
+  --text: #1d3557;
+  --card: #ffffff;
+  --line: #d9e1e8;
+  --accent: #2a9d8f;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family:
+    "IBM Plex Sans",
+    "Segoe UI",
+    sans-serif;
+  background: radial-gradient(circle at 10% 10%, #f8f9fa 0, var(--bg) 65%);
+  color: var(--text);
+}
+
+.container {
+  max-width: 1100px;
+  margin: 32px auto;
+  padding: 0 16px 40px;
+  display: grid;
+  gap: 16px;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px;
+  box-shadow: 0 7px 18px rgba(0, 0, 0, 0.04);
+}
+
+h1,
+h2 {
+  margin-top: 0;
+}
+
+.hint {
+  color: #4c6a7f;
+}
+
+.status {
+  font-weight: 600;
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 10px 0;
+}
+
+button {
+  border: 1px solid transparent;
+  background: var(--accent);
+  color: white;
+  border-radius: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+button:hover {
+  opacity: 0.95;
+}
+
+.form {
+  display: grid;
+  gap: 10px;
+}
+
+label {
+  display: grid;
+  gap: 6px;
+  font-weight: 600;
+}
+
+input {
+  border: 1px solid #b8c6d1;
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.grid2,
+.grid3 {
+  display: grid;
+  gap: 10px;
+}
+
+.grid2 {
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.grid3 {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.checkboxes {
+  border: 1px solid #b8c6d1;
+  border-radius: 8px;
+  padding: 8px;
+  display: grid;
+  gap: 6px;
+}
+
+.checkboxes label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+
+.alerts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.alerts li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px;
+}
+
+@media (max-width: 720px) {
+  .alerts li {
+    flex-direction: column;
+  }
+}
