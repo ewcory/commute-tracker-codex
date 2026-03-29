@@ -13,7 +13,7 @@ This app lets you create multiple commute alerts (for example San Francisco <-> 
 - Notification channels:
   - SMS via Twilio
   - ntfy push notifications
-- Manual run (`Run Check Now`) plus automatic scheduled checks (Vercel Cron every 5 minutes)
+- Manual run (`Run Check Now`) plus automatic scheduled checks (GitHub Actions every 5 minutes)
 
 ## 1) Setup
 
@@ -69,7 +69,20 @@ If your configured rule(s) match, and cooldown + consecutive-trigger constraints
 2. Import into Vercel.
 3. Add all environment variables in Vercel project settings.
 4. Set `DATABASE_URL` to your Neon pooled Postgres URL.
-5. Vercel will run cron from `vercel.json` every 5 minutes against `/api/cron/check-alerts`.
+5. Deploy the project on Vercel Hobby (no Vercel cron required).
+
+## 4) Scheduler for Vercel Hobby (GitHub Actions)
+
+Vercel Hobby allows only daily cron jobs, so this project uses GitHub Actions for 5-minute checks.
+
+1. In your GitHub repo, go to `Settings` -> `Secrets and variables` -> `Actions`.
+2. Create these repository secrets:
+   - `APP_BASE_URL`: your production URL (example `https://your-app.vercel.app`)
+   - `CRON_SECRET`: same secret value you put in Vercel env vars
+3. The workflow file `.github/workflows/check-alerts.yml` runs every 5 minutes and calls:
+   - `GET /api/cron/check-alerts`
+   - with header `x-cron-secret`
+4. You can also run it manually from the Actions tab using `workflow_dispatch`.
 
 In production, set `CRON_SECRET` and configure your cron caller to send:
 
