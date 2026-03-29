@@ -165,6 +165,16 @@ export function AlertDashboard() {
     }
   }
 
+  async function sendTestNotification() {
+    setStatus("Sending test ntfy notification...");
+    try {
+      await jsonFetch("/api/test-notification", { method: "POST" });
+      setStatus("Test notification sent. Check your ntfy app topic.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Could not send test notification");
+    }
+  }
+
   return (
     <main className="container">
       <section className="card">
@@ -178,6 +188,9 @@ export function AlertDashboard() {
         <div className="row">
           <button type="button" onClick={checkNow}>
             Run Check Now
+          </button>
+          <button type="button" onClick={sendTestNotification}>
+            Send Test Notification
           </button>
         </div>
         <p className="status">{status}</p>
