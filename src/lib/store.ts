@@ -100,9 +100,9 @@ let initPromise: Promise<void> | null = null;
 async function ensureSchema(): Promise<void> {
   if (!initPromise) {
     initPromise = (async () => {
-      await sql()`SELECT pg_advisory_lock(927130221)`;
-      try {
-        await sql()`
+      await sql().begin(async (tx) => {
+        await tx.unsafe("SELECT pg_advisory_xact_lock($1)", [927130221]);
+        await tx.unsafe(`
           CREATE TABLE IF NOT EXISTS alerts (
             id TEXT PRIMARY KEY,
             name TEXT NOT NULL,
@@ -127,8 +127,8 @@ async function ensureSchema(): Promise<void> {
             created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
             updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
           );
-        `;
-        await sql()`
+        `);
+        await tx.unsafe(`
           CREATE TABLE IF NOT EXISTS alert_checks (
             id TEXT PRIMARY KEY,
             alert_id TEXT NOT NULL REFERENCES alerts(id) ON DELETE CASCADE,
@@ -141,11 +141,12 @@ async function ensureSchema(): Promise<void> {
             weather_summary TEXT NOT NULL,
             incident_summary TEXT NOT NULL
           );
-        `;
-        await sql()`CREATE INDEX IF NOT EXISTS idx_alert_checks_alert_id_checked_at ON alert_checks(alert_id, checked_at DESC);`;
-      } finally {
-        await sql()`SELECT pg_advisory_unlock(927130221)`;
-      }
+        `);
+        await tx.unsafe(`
+          CREATE INDEX IF NOT EXISTS idx_alert_checks_alert_id_checked_at
+          ON alert_checks(alert_id, checked_at DESC);
+        `);
+      });
     })();
   }
   try {
