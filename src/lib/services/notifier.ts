@@ -1,19 +1,4 @@
 import twilio from "twilio";
-import webpush from "web-push";
-
-import { deletePushSubscription, listPushSubscriptions } from "@/lib/store";
-
-function configureWebPush(): boolean {
-  const publicKey = process.env.VAPID_PUBLIC_KEY;
-  const privateKey = process.env.VAPID_PRIVATE_KEY;
-  const contact = process.env.VAPID_CONTACT_EMAIL;
-  if (!publicKey || !privateKey || !contact) {
-    return false;
-  }
-
-  webpush.setVapidDetails(`mailto:${contact}`, publicKey, privateKey);
-  return true;
-}
 
 export async function sendSmsIfEnabled(phoneNumber: string | null, message: string): Promise<void> {
   if (!phoneNumber) {
@@ -37,34 +22,25 @@ export async function sendSmsIfEnabled(phoneNumber: string | null, message: stri
 }
 
 export async function sendPushNotification(message: string): Promise<void> {
-  if (!configureWebPush()) {
+  const topic = process.env.NTFY_TOPIC;
+  if (!topic) {
     return;
   }
 
-  const subs = await listPushSubscriptions();
-  if (subs.length === 0) {
-    return;
-  }
+  const baseUrl = (process.env.NTFY_BASE_URL || "https://ntfy.sh").replace(/\/+$/, "");
+  const token = process.env.NTFY_ACCESS_TOKEN;
 
-  await Promise.all(
-    subs.map(async (sub) => {
-      try {
-        await webpush.sendNotification(
-          {
-            endpoint: sub.endpoint,
-            keys: {
-              p256dh: sub.p256dh,
-              auth: sub.auth
-            }
-          },
-          JSON.stringify({
-            title: "Commute Alert",
-            body: message
-          })
-        );
-      } catch {
-        await deletePushSubscription(sub.endpoint).catch(() => undefined);
-      }
-    })
-  );
+  const res = await fetch(`${baseUrl}/${encodeURIComponent(topic)}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "text/plain; charset=utf-8",
+      Title: "Commute Alert",
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    },
+    body: message
+  });
+
+  if (!res.ok) {
+    throw new Error(`ntfy publish failed (${res.status})`);
+  }
 }

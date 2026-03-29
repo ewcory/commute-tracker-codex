@@ -1,6 +1,6 @@
 # Commute Alert (Next.js + Google Maps)
 
-This app lets you create multiple commute alerts (for example San Francisco <-> Emeryville), monitor traffic in near real time, and notify you by SMS and/or browser push when your conditions are met.
+This app lets you create multiple commute alerts (for example San Francisco <-> Emeryville), monitor traffic in near real time, and notify you by SMS and/or ntfy push when your conditions are met.
 
 ## What It Supports
 
@@ -12,7 +12,7 @@ This app lets you create multiple commute alerts (for example San Francisco <-> 
   - Optional traffic-incident keyword match (for Bay Bridge-focused checks)
 - Notification channels:
   - SMS via Twilio
-  - Browser push notifications
+  - ntfy push notifications
 - Manual run (`Run Check Now`) plus automatic scheduled checks (Vercel Cron every 5 minutes)
 
 ## 1) Setup
@@ -25,10 +25,13 @@ cp .env.example .env.local
 
 Fill in your keys in `.env.local`:
 
+- `DATABASE_URL` (required, Neon pooled Postgres URL)
 - `GOOGLE_MAPS_API_KEY` (required)
 - `API_511_KEY` (optional, for Bay Area incidents)
 - `TWILIO_*` (optional, for SMS)
-- `VAPID_*` + `NEXT_PUBLIC_VAPID_PUBLIC_KEY` (optional, for push)
+- `NTFY_TOPIC` (optional, for push)
+- `NTFY_BASE_URL` (optional, defaults to `https://ntfy.sh`)
+- `NTFY_ACCESS_TOKEN` (optional if using authenticated ntfy server)
 
 Install dependencies:
 
@@ -65,8 +68,7 @@ If your configured rule(s) match, and cooldown + consecutive-trigger constraints
 1. Push this repo to GitHub.
 2. Import into Vercel.
 3. Add all environment variables in Vercel project settings.
-4. The app stores data in `data/store.json` by default.
-   - For serious production use, move this to a hosted database layer (for example Postgres).
+4. Set `DATABASE_URL` to your Neon pooled Postgres URL.
 5. Vercel will run cron from `vercel.json` every 5 minutes against `/api/cron/check-alerts`.
 
 In production, set `CRON_SECRET` and configure your cron caller to send:

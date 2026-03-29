@@ -165,40 +165,6 @@ export function AlertDashboard() {
     }
   }
 
-  async function enablePush() {
-    if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
-      setStatus("Push notifications are not supported in this browser.");
-      return;
-    }
-
-    const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-    if (!vapidKey) {
-      setStatus("Missing NEXT_PUBLIC_VAPID_PUBLIC_KEY.");
-      return;
-    }
-
-    const registration = await navigator.serviceWorker.register("/sw.js");
-    const permission = await Notification.requestPermission();
-    if (permission !== "granted") {
-      setStatus("Push permission was not granted.");
-      return;
-    }
-
-    const existing = await registration.pushManager.getSubscription();
-    const subscription =
-      existing ??
-      (await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapidKey) as BufferSource
-      }));
-
-    await jsonFetch("/api/push-subscriptions", {
-      method: "POST",
-      body: JSON.stringify(subscription)
-    });
-    setStatus("Push notifications enabled on this device.");
-  }
-
   return (
     <main className="container">
       <section className="card">
@@ -207,13 +173,11 @@ export function AlertDashboard() {
           Configure multiple traffic alerts powered by Google Maps travel-time traffic, optional Bay Bridge
           incident keyword checks, and severe weather filtering.
         </p>
+        <p>Push notifications are sent via ntfy when `NTFY_TOPIC` is set in your environment variables.</p>
         <p className="hint">{instructions}</p>
         <div className="row">
           <button type="button" onClick={checkNow}>
             Run Check Now
-          </button>
-          <button type="button" onClick={enablePush}>
-            Enable Push On This Device
           </button>
         </div>
         <p className="status">{status}</p>
@@ -402,15 +366,4 @@ export function AlertDashboard() {
       </section>
     </main>
   );
-}
-
-function urlBase64ToUint8Array(base64String: string): Uint8Array {
-  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
-  const rawData = window.atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-  for (let i = 0; i < rawData.length; i += 1) {
-    outputArray[i] = rawData.charCodeAt(i);
-  }
-  return outputArray;
 }
