@@ -27,6 +27,7 @@ Fill in your keys in `.env.local`:
 
 - `DATABASE_URL` (required, Neon pooled Postgres URL)
 - `GOOGLE_MAPS_API_KEY` (required)
+- `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` (required for address autocomplete dropdown in browser)
 - `API_511_KEY` (optional, for Bay Area incidents)
 - `NTFY_TOPIC` (optional, for push)
 - `NTFY_BASE_URL` (optional, defaults to `https://ntfy.sh`)

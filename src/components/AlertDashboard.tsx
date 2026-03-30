@@ -2,6 +2,8 @@
 
 import { FormEvent, useEffect, useState } from "react";
 
+import { AddressAutocompleteInput } from "@/components/AddressAutocompleteInput";
+
 type Alert = {
   id: string;
   name: string;
@@ -337,9 +339,9 @@ export function AlertDashboard() {
                 label="Home address"
                 help="Where you start in the morning and return in the afternoon."
               />
-              <input
+              <AddressAutocompleteInput
                 value={form.homeAddress}
-                onChange={(e) => setForm({ ...form, homeAddress: e.target.value })}
+                onChange={(value) => setForm({ ...form, homeAddress: value })}
                 required
               />
             </label>
@@ -348,9 +350,9 @@ export function AlertDashboard() {
                 label="Work address"
                 help="Where you go in the morning and start from in the afternoon."
               />
-              <input
+              <AddressAutocompleteInput
                 value={form.workAddress}
-                onChange={(e) => setForm({ ...form, workAddress: e.target.value })}
+                onChange={(value) => setForm({ ...form, workAddress: value })}
                 required
               />
             </label>
