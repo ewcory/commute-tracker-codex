@@ -111,8 +111,6 @@ export async function runCheckForSingleAlert(alert: Alert, now = new Date()): Pr
     );
     if (matched) {
       reasons.push(`Incident matched keyword "${alert.incidentKeywordFilter}"`);
-    } else {
-      reasons.length = 0;
     }
   } else if (incidents.length > 0) {
     reasons.push(`Traffic incident: ${incidents[0].title}`);
