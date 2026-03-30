@@ -528,7 +528,7 @@ function CommuteSectionEditor({
         <label>
           <LabelWithHelp
             label="Commute threshold (minutes)"
-            help="Alert if current commute time reaches or exceeds this number."
+            help="Absolute total trip-time trigger. Alert if live commute time reaches this number."
           />
           <input
             type="number"
@@ -542,7 +542,7 @@ function CommuteSectionEditor({
         <label>
           <LabelWithHelp
             label="Extra delay threshold (minutes)"
-            help="How many minutes slower than normal traffic must be before alerting. Example: normal 25, current 38 means extra delay 13."
+            help="Relative slowdown trigger. The app auto-calculates normal (baseline) time from Google each check, then compares live traffic time against it. Example: baseline 25, live 38 means extra delay 13."
           />
           <input
             type="number"
