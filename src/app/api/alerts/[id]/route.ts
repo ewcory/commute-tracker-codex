@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { deleteAlert, updateAlert } from "@/lib/store";
+import { getAuthUserFromRequest } from "@/lib/auth";
+import { deleteAlertForUser, updateAlertForUser } from "@/lib/store";
 import { alertInputSchema } from "@/lib/validation";
 
 export const runtime = "nodejs";
@@ -10,6 +11,11 @@ type Params = {
 };
 
 export async function PATCH(req: NextRequest, { params }: Params) {
+  const user = await getAuthUserFromRequest(req);
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { id } = await params;
   const body = await req.json();
   const parsed = alertInputSchema.partial().safeParse(body);
@@ -18,7 +24,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   }
 
   const data = parsed.data;
-  const updated = await updateAlert(id, (current) => ({
+  const updated = await updateAlertForUser(id, user.id, (current) => ({
     ...current,
     ...data,
     maxDurationMinutes: data.maxDurationMinutes === undefined ? current.maxDurationMinutes : data.maxDurationMinutes,
@@ -34,8 +40,13 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   return NextResponse.json({ alert: updated });
 }
 
-export async function DELETE(_: NextRequest, { params }: Params) {
+export async function DELETE(req: NextRequest, { params }: Params) {
+  const user = await getAuthUserFromRequest(req);
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { id } = await params;
-  await deleteAlert(id);
+  await deleteAlertForUser(id, user.id);
   return NextResponse.json({ ok: true });
 }

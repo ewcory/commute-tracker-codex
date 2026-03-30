@@ -2,7 +2,7 @@ import { getTrafficIncidents } from "@/lib/services/incidents";
 import { getCommuteSnapshot } from "@/lib/services/googleMaps";
 import { sendPushNotification, sendSmsIfEnabled } from "@/lib/services/notifier";
 import { getSevereWeatherForAddress } from "@/lib/services/weather";
-import { addCheck, Alert, listAlerts, updateAlert } from "@/lib/store";
+import { addCheck, Alert, listAlerts, updateAlertForUser } from "@/lib/store";
 import { isNowInWindow, weekdayNumber } from "@/lib/time";
 
 type CheckResult = {
@@ -30,7 +30,7 @@ function minutesSince(date: Date, now: Date): number {
 }
 
 export async function runChecksForAllAlerts(now = new Date()): Promise<CheckResult[]> {
-  const alerts = (await listAlerts()).filter((a) => a.enabled);
+  const alerts = (await listAlerts()).filter((a) => a.enabled && Boolean(a.userId));
   const results: CheckResult[] = [];
 
   for (const alert of alerts) {
@@ -101,7 +101,7 @@ export async function runCheckForSingleAlert(alert: Alert, now = new Date()): Pr
     incidentSummary: incidents.map((i) => i.title).join("; ") || "No incidents"
   });
 
-  await updateAlert(alert.id, (current) => ({
+  await updateAlertForUser(alert.id, alert.userId ?? "", (current) => ({
     ...current,
     consecutiveTriggerCount: nextCount,
     lastTriggeredAt: triggered ? now.toISOString() : current.lastTriggeredAt
@@ -127,7 +127,7 @@ export async function runCheckForSingleAlert(alert: Alert, now = new Date()): Pr
       await sendPushNotification(message);
     }
 
-    await updateAlert(alert.id, (current) => ({
+    await updateAlertForUser(alert.id, alert.userId ?? "", (current) => ({
       ...current,
       lastNotifiedAt: now.toISOString()
     }));

@@ -14,6 +14,7 @@ This app lets you create multiple commute alerts (for example San Francisco <-> 
   - SMS via Twilio
   - ntfy push notifications
 - Manual run (`Run Check Now`) plus automatic scheduled checks (GitHub Actions every 5 minutes)
+- Username/password authentication with secure session cookies
 
 ## 1) Setup
 
@@ -46,6 +47,8 @@ npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
+
+When you first open the app, create an account and then log in.
 
 ## 2) How Alerts Trigger
 

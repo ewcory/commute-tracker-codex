@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { createAlert, latestCheckByAlertId, listAlerts } from "@/lib/store";
+import { getAuthUserFromRequest } from "@/lib/auth";
+import { createAlert, latestCheckByAlertId, listAlertsForUser } from "@/lib/store";
 import { alertInputSchema } from "@/lib/validation";
 
 export const runtime = "nodejs";
 
-export async function GET() {
-  const baseAlerts = await listAlerts();
+export async function GET(req: NextRequest) {
+  const user = await getAuthUserFromRequest(req);
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const baseAlerts = await listAlertsForUser(user.id);
   const alerts = await Promise.all(
     baseAlerts.map(async (alert) => {
       const latest = await latestCheckByAlertId(alert.id);
@@ -21,6 +27,11 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const user = await getAuthUserFromRequest(req);
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const body = await req.json();
   const parsed = alertInputSchema.safeParse(body);
   if (!parsed.success) {
@@ -35,6 +46,7 @@ export async function POST(req: NextRequest) {
 
   const data = parsed.data;
   const created = await createAlert({
+      userId: user.id,
       name: data.name,
       originAddress: data.originAddress,
       destinationAddress: data.destinationAddress,

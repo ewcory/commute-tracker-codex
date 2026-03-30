@@ -24,9 +24,12 @@ type Alert = {
     triggered: boolean;
     triggerReasons: string;
     checkedAt: string;
-    travelDurationMinutes: number;
-    delayMinutes: number;
   }>;
+};
+
+type AppUser = {
+  id: string;
+  username: string;
 };
 
 type NewAlertForm = {
@@ -81,10 +84,15 @@ async function jsonFetch<T>(url: string, init?: RequestInit): Promise<T> {
 }
 
 export function AlertDashboard() {
+  const [user, setUser] = useState<AppUser | null>(null);
+  const [authMode, setAuthMode] = useState<"login" | "register">("login");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [form, setForm] = useState<NewAlertForm>(defaultForm);
   const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState("Loading alerts...");
+  const [status, setStatus] = useState("Loading...");
 
   const instructions = useMemo(
     () =>
@@ -96,15 +104,58 @@ export function AlertDashboard() {
     []
   );
 
+  async function loadAuthAndAlerts() {
+    try {
+      const me = await jsonFetch<{ user: AppUser }>("/api/auth/me");
+      setUser(me.user);
+      const data = await jsonFetch<{ alerts: Alert[] }>("/api/alerts");
+      setAlerts(data.alerts);
+      setStatus(`Loaded ${data.alerts.length} alert(s).`);
+    } catch {
+      setUser(null);
+      setAlerts([]);
+      setStatus("Please log in.");
+    }
+  }
+
+  useEffect(() => {
+    loadAuthAndAlerts();
+  }, []);
+
+  async function onAuthSubmit(e: FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setStatus(authMode === "login" ? "Logging in..." : "Creating account...");
+    try {
+      const path = authMode === "login" ? "/api/auth/login" : "/api/auth/register";
+      const data = await jsonFetch<{ user: AppUser }>(path, {
+        method: "POST",
+        body: JSON.stringify({ username, password })
+      });
+      setUser(data.user);
+      setPassword("");
+      setStatus(`Welcome, ${data.user.username}.`);
+      await loadAuthAndAlerts();
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Authentication failed");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function logout() {
+    setStatus("Logging out...");
+    await jsonFetch("/api/auth/logout", { method: "POST" });
+    setUser(null);
+    setAlerts([]);
+    setStatus("Logged out.");
+  }
+
   async function loadAlerts() {
     const data = await jsonFetch<{ alerts: Alert[] }>("/api/alerts");
     setAlerts(data.alerts);
     setStatus(`Loaded ${data.alerts.length} alert(s).`);
   }
-
-  useEffect(() => {
-    loadAlerts().catch((error: Error) => setStatus(error.message));
-  }, []);
 
   async function onCreateAlert(e: FormEvent) {
     e.preventDefault();
@@ -175,10 +226,50 @@ export function AlertDashboard() {
     }
   }
 
+  if (!user) {
+    return (
+      <main className="container">
+        <section className="card">
+          <h1>Commute Alert Login</h1>
+          <p>Create an account once, then log in with username/password.</p>
+          <form onSubmit={onAuthSubmit} className="form">
+            <label>
+              Username
+              <input value={username} onChange={(e) => setUsername(e.target.value)} required minLength={3} />
+            </label>
+            <label>
+              Password
+              <input
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                type="password"
+                required
+                minLength={8}
+              />
+            </label>
+            <div className="row">
+              <button type="submit" disabled={loading}>
+                {authMode === "login" ? "Log In" : "Create Account"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setAuthMode(authMode === "login" ? "register" : "login")}
+              >
+                Switch to {authMode === "login" ? "Register" : "Login"}
+              </button>
+            </div>
+          </form>
+          <p className="status">{status}</p>
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main className="container">
       <section className="card">
         <h1>Commute Alert Control Panel</h1>
+        <p>Logged in as <strong>{user.username}</strong>.</p>
         <p>
           Configure multiple traffic alerts powered by Google Maps travel-time traffic, optional Bay Bridge
           incident keyword checks, and severe weather filtering.
@@ -191,6 +282,9 @@ export function AlertDashboard() {
           </button>
           <button type="button" onClick={sendTestNotification}>
             Send Test Notification
+          </button>
+          <button type="button" onClick={logout}>
+            Log Out
           </button>
         </div>
         <p className="status">{status}</p>
