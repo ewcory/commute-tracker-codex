@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { getAuthUserFromRequest } from "@/lib/auth";
+import { geocodeAddress } from "@/lib/services/googleMaps";
 import { deleteAlertForUser, updateAlertForUser } from "@/lib/store";
 import { alertInputSchema } from "@/lib/validation";
 
@@ -24,6 +25,23 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   }
 
   const data = parsed.data;
+  try {
+    if (data.originAddress) {
+      await geocodeAddress(data.originAddress);
+    }
+    if (data.destinationAddress) {
+      await geocodeAddress(data.destinationAddress);
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Address validation failed";
+    return NextResponse.json(
+      {
+        error: `Could not verify one or both addresses. Please choose full addresses from autocomplete. ${message}`
+      },
+      { status: 400 }
+    );
+  }
+
   const updated = await updateAlertForUser(id, user.id, (current) => ({
     ...current,
     ...data,

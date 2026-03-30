@@ -37,6 +37,8 @@ type AppUser = {
 
 type AlertEditDraft = {
   name: string;
+  originAddress: string;
+  destinationAddress: string;
   startTime: string;
   endTime: string;
   maxDurationMinutes: string;
@@ -281,6 +283,8 @@ export function AlertDashboard() {
     setEditingAlertId(alert.id);
     setEditDraft({
       name: alert.name,
+      originAddress: alert.originAddress,
+      destinationAddress: alert.destinationAddress,
       startTime: alert.startTime,
       endTime: alert.endTime,
       maxDurationMinutes: alert.maxDurationMinutes?.toString() ?? "",
@@ -324,6 +328,8 @@ export function AlertDashboard() {
         method: "PATCH",
         body: JSON.stringify({
           name: editDraft.name,
+          originAddress: editDraft.originAddress,
+          destinationAddress: editDraft.destinationAddress,
           startTime: editDraft.startTime,
           endTime: editDraft.endTime,
           maxDurationMinutes: editDraft.maxDurationMinutes ? Number(editDraft.maxDurationMinutes) : null,
@@ -593,6 +599,26 @@ export function AlertDashboard() {
                           onChange={(e) => setEditDraft({ ...editDraft, name: e.target.value })}
                         />
                       </label>
+                      <div className="grid2">
+                        <label>
+                          Origin address
+                          <AddressAutocompleteInput
+                            value={editDraft.originAddress}
+                            onChange={(value) => setEditDraft({ ...editDraft, originAddress: value })}
+                            required
+                          />
+                        </label>
+                        <label>
+                          Destination address
+                          <AddressAutocompleteInput
+                            value={editDraft.destinationAddress}
+                            onChange={(value) =>
+                              setEditDraft({ ...editDraft, destinationAddress: value })
+                            }
+                            required
+                          />
+                        </label>
+                      </div>
                       <div className="grid3">
                         <label>
                           Start time
