@@ -329,29 +329,14 @@ export function AlertDashboard() {
       </section>
 
       <section className="card">
-        <h2>Field Guide</h2>
-        <p><strong>Home address:</strong> where you start in the morning and end in the afternoon.</p>
-        <p><strong>Work address:</strong> where you end in the morning and start in the afternoon.</p>
-        <p><strong>Days (1-7):</strong> weekdays to monitor. 1=Mon ... 7=Sun.</p>
-        <p><strong>Start/End time:</strong> monitoring window for that commute period.</p>
-        <p><strong>Commute threshold (minutes):</strong> alert when current commute is at/above this.</p>
-        <p><strong>Extra delay threshold (minutes):</strong> how much slower than normal traffic must be before triggering. Example: if normal is 25m and now is 38m, extra delay is 13m.</p>
-        <p><strong>Rapid increase:</strong> alerts earlier if trend suggests threshold will be exceeded soon.</p>
-        <p><strong>Min rise since last check:</strong> how much increase counts as "rapid".</p>
-        <p><strong>Lookahead minutes:</strong> how far ahead to project the current trend.</p>
-        <p><strong>Cooldown:</strong> minimum minutes between notifications for same alert.</p>
-        <p><strong>Consecutive checks required:</strong> condition must be true this many checks in a row.</p>
-        <p><strong>Bay Bridge keyword:</strong> incident text filter, e.g. <code>bay bridge</code>.</p>
-        <p><strong>Require severe weather:</strong> only trigger when severe weather is active.</p>
-        <p><strong>Push enabled:</strong> send ntfy push notification.</p>
-      </section>
-
-      <section className="card">
         <h2>Create Morning + Afternoon Alerts</h2>
         <form onSubmit={createMorningAndAfternoonAlerts} className="form">
           <div className="grid2">
             <label>
-              Home address
+              <LabelWithHelp
+                label="Home address"
+                help="Where you start in the morning and return in the afternoon."
+              />
               <input
                 value={form.homeAddress}
                 onChange={(e) => setForm({ ...form, homeAddress: e.target.value })}
@@ -359,7 +344,10 @@ export function AlertDashboard() {
               />
             </label>
             <label>
-              Work address
+              <LabelWithHelp
+                label="Work address"
+                help="Where you go in the morning and start from in the afternoon."
+              />
               <input
                 value={form.workAddress}
                 onChange={(e) => setForm({ ...form, workAddress: e.target.value })}
@@ -382,7 +370,9 @@ export function AlertDashboard() {
 
           <h3>Shared Settings (Applied to Both)</h3>
           <div>
-            <p><strong>Active days</strong></p>
+            <p>
+              <strong>Active days</strong> <HelpTip text="Pick which days these alerts should run." />
+            </p>
             <div className="row">
               {dayOptions.map((day) => (
                 <label key={day.value}>
@@ -398,7 +388,10 @@ export function AlertDashboard() {
           </div>
           <div className="grid3">
             <label>
-              Cooldown minutes
+              <LabelWithHelp
+                label="Cooldown minutes"
+                help="Minimum wait time between notifications for the same alert."
+              />
               <input
                 type="number"
                 min={1}
@@ -407,7 +400,10 @@ export function AlertDashboard() {
               />
             </label>
             <label>
-              Consecutive checks required
+              <LabelWithHelp
+                label="Consecutive checks required"
+                help="Condition must be true this many checks in a row before notifying."
+              />
               <input
                 type="number"
                 min={1}
@@ -418,7 +414,10 @@ export function AlertDashboard() {
           </div>
           <div className="grid2">
             <label>
-              Bay Bridge incident keyword
+              <LabelWithHelp
+                label="Bay Bridge incident keyword"
+                help="Only incidents with this text are treated as matches. Example: bay bridge."
+              />
               <input
                 value={form.incidentKeywordFilter}
                 onChange={(e) => setForm({ ...form, incidentKeywordFilter: e.target.value })}
@@ -432,7 +431,7 @@ export function AlertDashboard() {
                 checked={form.severeWeatherRequired}
                 onChange={(e) => setForm({ ...form, severeWeatherRequired: e.target.checked })}
               />
-              Require severe weather
+              Require severe weather <HelpTip text="If enabled, alerts only trigger when severe weather is active." />
             </label>
             <label>
               <input
@@ -440,7 +439,7 @@ export function AlertDashboard() {
                 checked={form.pushEnabled}
                 onChange={(e) => setForm({ ...form, pushEnabled: e.target.checked })}
               />
-              Push enabled
+              Push enabled <HelpTip text="Send notification through ntfy when this alert triggers." />
             </label>
           </div>
 
@@ -503,7 +502,10 @@ function CommuteSectionEditor({
     <>
       <div className="grid3">
         <label>
-          Start time
+          <LabelWithHelp
+            label="Start time"
+            help="When monitoring starts for this commute window."
+          />
           <input
             type="time"
             value={value.startTime}
@@ -511,7 +513,10 @@ function CommuteSectionEditor({
           />
         </label>
         <label>
-          End time
+          <LabelWithHelp
+            label="End time"
+            help="When monitoring ends for this commute window."
+          />
           <input
             type="time"
             value={value.endTime}
@@ -519,7 +524,10 @@ function CommuteSectionEditor({
           />
         </label>
         <label>
-          Commute threshold (minutes)
+          <LabelWithHelp
+            label="Commute threshold (minutes)"
+            help="Alert if current commute time reaches or exceeds this number."
+          />
           <input
             type="number"
             min={1}
@@ -530,7 +538,10 @@ function CommuteSectionEditor({
       </div>
       <div className="grid3">
         <label>
-          Extra delay threshold (minutes)
+          <LabelWithHelp
+            label="Extra delay threshold (minutes)"
+            help="How many minutes slower than normal traffic must be before alerting. Example: normal 25, current 38 means extra delay 13."
+          />
           <input
             type="number"
             min={0}
@@ -539,7 +550,10 @@ function CommuteSectionEditor({
           />
         </label>
         <label>
-          Min rise since last check (minutes)
+          <LabelWithHelp
+            label="Min rise since last check (minutes)"
+            help="Minimum increase needed to consider traffic rising rapidly."
+          />
           <input
             type="number"
             min={1}
@@ -548,7 +562,10 @@ function CommuteSectionEditor({
           />
         </label>
         <label>
-          Lookahead (minutes)
+          <LabelWithHelp
+            label="Lookahead (minutes)"
+            help="How far ahead to project the current trend when deciding early warning."
+          />
           <input
             type="number"
             min={5}
@@ -564,9 +581,27 @@ function CommuteSectionEditor({
             checked={value.rapidIncreaseEnabled}
             onChange={(e) => onChange({ ...value, rapidIncreaseEnabled: e.target.checked })}
           />
-          Enable rapid-increase prediction
+          Enable rapid-increase prediction <HelpTip text="If enabled, the app predicts if commute time is climbing fast and likely to cross your threshold soon." />
         </label>
       </div>
     </>
+  );
+}
+
+function LabelWithHelp({ label, help }: { label: string; help: string }) {
+  return (
+    <span className="label-with-help">
+      {label}
+      <HelpTip text={help} />
+    </span>
+  );
+}
+
+function HelpTip({ text }: { text: string }) {
+  return (
+    <span className="help-tip" tabIndex={0} aria-label={`Help: ${text}`}>
+      ?
+      <span className="help-popup">{text}</span>
+    </span>
   );
 }
