@@ -1,6 +1,6 @@
 # Commute Alert (Next.js + Google Maps)
 
-This app lets you create multiple commute alerts (for example San Francisco <-> Emeryville), monitor traffic in near real time, and notify you by SMS and/or ntfy push when your conditions are met.
+This app lets you create multiple commute alerts (for example San Francisco <-> Emeryville), monitor traffic in near real time, and notify you by ntfy push when your conditions are met.
 
 ## What It Supports
 
@@ -11,7 +11,6 @@ This app lets you create multiple commute alerts (for example San Francisco <-> 
   - Optional severe-weather requirement
   - Optional traffic-incident keyword match (for Bay Bridge-focused checks)
 - Notification channels:
-  - SMS via Twilio
   - ntfy push notifications
 - Manual run (`Run Check Now`) plus automatic scheduled checks (GitHub Actions every 5 minutes)
 - Username/password authentication with secure session cookies
@@ -29,7 +28,6 @@ Fill in your keys in `.env.local`:
 - `DATABASE_URL` (required, Neon pooled Postgres URL)
 - `GOOGLE_MAPS_API_KEY` (required)
 - `API_511_KEY` (optional, for Bay Area incidents)
-- `TWILIO_*` (optional, for SMS)
 - `NTFY_TOPIC` (optional, for push)
 - `NTFY_BASE_URL` (optional, defaults to `https://ntfy.sh`)
 - `NTFY_ACCESS_TOKEN` (optional if using authenticated ntfy server)
@@ -95,6 +93,5 @@ In production, set `CRON_SECRET` and configure your cron caller to send:
 ## Important Safety/Cost Notes
 
 - Google Maps API calls cost money after free-tier limits.
-- Twilio SMS costs money per message.
 - Start with one alert and a larger cooldown (for example 45-60 minutes) to avoid noisy/expensive notification bursts.
 - This app is currently single-user and does not include login/auth yet.

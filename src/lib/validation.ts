@@ -20,9 +20,7 @@ export const alertInputSchema = z.object({
   rapidIncreaseEnabled: z.boolean().optional(),
   rapidIncreaseMinRiseMinutes: z.coerce.number().int().min(1).max(60).optional(),
   rapidIncreaseLookaheadMinutes: z.coerce.number().int().min(5).max(180).optional(),
-  smsEnabled: z.boolean().optional(),
-  pushEnabled: z.boolean().optional(),
-  smsPhoneNumber: z.string().max(30).nullable().optional()
+  pushEnabled: z.boolean().optional()
 });
 
 export const pushSubSchema = z.object({

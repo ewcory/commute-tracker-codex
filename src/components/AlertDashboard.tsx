@@ -20,9 +20,7 @@ type Alert = {
   rapidIncreaseEnabled: boolean;
   rapidIncreaseMinRiseMinutes: number;
   rapidIncreaseLookaheadMinutes: number;
-  smsEnabled: boolean;
   pushEnabled: boolean;
-  smsPhoneNumber: string | null;
   checks?: Array<{
     triggered: boolean;
     triggerReasons: string;
@@ -48,14 +46,12 @@ type CommuteSection = {
 type SetupForm = {
   homeAddress: string;
   workAddress: string;
-  daysOfWeekCsv: string;
+  daysOfWeek: number[];
   incidentKeywordFilter: string;
   severeWeatherRequired: boolean;
   cooldownMinutes: string;
   minConsecutiveTriggers: string;
-  smsEnabled: boolean;
   pushEnabled: boolean;
-  smsPhoneNumber: string;
   morning: CommuteSection;
   afternoon: CommuteSection;
 };
@@ -63,14 +59,12 @@ type SetupForm = {
 const defaultForm: SetupForm = {
   homeAddress: "San Francisco, CA",
   workAddress: "Emeryville, CA",
-  daysOfWeekCsv: "1,2,3,4,5",
+  daysOfWeek: [1, 2, 3, 4, 5],
   incidentKeywordFilter: "bay bridge",
   severeWeatherRequired: false,
   cooldownMinutes: "45",
   minConsecutiveTriggers: "1",
-  smsEnabled: false,
   pushEnabled: true,
-  smsPhoneNumber: "",
   morning: {
     startTime: "06:00",
     endTime: "10:00",
@@ -90,6 +84,16 @@ const defaultForm: SetupForm = {
     rapidIncreaseLookaheadMinutes: "20"
   }
 };
+
+const dayOptions = [
+  { value: 1, label: "Mon" },
+  { value: 2, label: "Tue" },
+  { value: 3, label: "Wed" },
+  { value: 4, label: "Thu" },
+  { value: 5, label: "Fri" },
+  { value: 6, label: "Sat" },
+  { value: 7, label: "Sun" }
+];
 
 async function jsonFetch<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, {
@@ -168,18 +172,20 @@ export function AlertDashboard() {
 
   async function createMorningAndAfternoonAlerts(e: FormEvent) {
     e.preventDefault();
+    if (form.daysOfWeek.length === 0) {
+      setStatus("Please select at least one day.");
+      return;
+    }
     setLoading(true);
     setStatus("Creating morning and afternoon alerts...");
 
     const common = {
-      daysOfWeekCsv: form.daysOfWeekCsv,
+      daysOfWeekCsv: [...form.daysOfWeek].sort((a, b) => a - b).join(","),
       incidentKeywordFilter: form.incidentKeywordFilter || null,
       severeWeatherRequired: form.severeWeatherRequired,
       cooldownMinutes: Number(form.cooldownMinutes),
       minConsecutiveTriggers: Number(form.minConsecutiveTriggers),
-      smsEnabled: form.smsEnabled,
-      pushEnabled: form.pushEnabled,
-      smsPhoneNumber: form.smsPhoneNumber || null
+      pushEnabled: form.pushEnabled
     };
 
     try {
@@ -224,6 +230,14 @@ export function AlertDashboard() {
     } finally {
       setLoading(false);
     }
+  }
+
+  function toggleDay(day: number) {
+    const selected = form.daysOfWeek.includes(day);
+    const next = selected
+      ? form.daysOfWeek.filter((d) => d !== day)
+      : [...form.daysOfWeek, day];
+    setForm({ ...form, daysOfWeek: next });
   }
 
   async function toggleAlert(alert: Alert) {
@@ -321,7 +335,7 @@ export function AlertDashboard() {
         <p><strong>Days (1-7):</strong> weekdays to monitor. 1=Mon ... 7=Sun.</p>
         <p><strong>Start/End time:</strong> monitoring window for that commute period.</p>
         <p><strong>Commute threshold (minutes):</strong> alert when current commute is at/above this.</p>
-        <p><strong>Delay threshold (minutes):</strong> alert when extra delay vs baseline reaches this.</p>
+        <p><strong>Extra delay threshold (minutes):</strong> how much slower than normal traffic must be before triggering. Example: if normal is 25m and now is 38m, extra delay is 13m.</p>
         <p><strong>Rapid increase:</strong> alerts earlier if trend suggests threshold will be exceeded soon.</p>
         <p><strong>Min rise since last check:</strong> how much increase counts as "rapid".</p>
         <p><strong>Lookahead minutes:</strong> how far ahead to project the current trend.</p>
@@ -329,7 +343,6 @@ export function AlertDashboard() {
         <p><strong>Consecutive checks required:</strong> condition must be true this many checks in a row.</p>
         <p><strong>Bay Bridge keyword:</strong> incident text filter, e.g. <code>bay bridge</code>.</p>
         <p><strong>Require severe weather:</strong> only trigger when severe weather is active.</p>
-        <p><strong>SMS enabled/phone:</strong> send texts if Twilio is configured.</p>
         <p><strong>Push enabled:</strong> send ntfy push notification.</p>
       </section>
 
@@ -368,15 +381,22 @@ export function AlertDashboard() {
           />
 
           <h3>Shared Settings (Applied to Both)</h3>
+          <div>
+            <p><strong>Active days</strong></p>
+            <div className="row">
+              {dayOptions.map((day) => (
+                <label key={day.value}>
+                  <input
+                    type="checkbox"
+                    checked={form.daysOfWeek.includes(day.value)}
+                    onChange={() => toggleDay(day.value)}
+                  />
+                  {day.label}
+                </label>
+              ))}
+            </div>
+          </div>
           <div className="grid3">
-            <label>
-              Days (1-7 CSV)
-              <input
-                value={form.daysOfWeekCsv}
-                onChange={(e) => setForm({ ...form, daysOfWeekCsv: e.target.value })}
-                required
-              />
-            </label>
             <label>
               Cooldown minutes
               <input
@@ -404,14 +424,6 @@ export function AlertDashboard() {
                 onChange={(e) => setForm({ ...form, incidentKeywordFilter: e.target.value })}
               />
             </label>
-            <label>
-              SMS phone number
-              <input
-                value={form.smsPhoneNumber}
-                onChange={(e) => setForm({ ...form, smsPhoneNumber: e.target.value })}
-                placeholder="+14155550123"
-              />
-            </label>
           </div>
           <div className="checkboxes">
             <label>
@@ -421,14 +433,6 @@ export function AlertDashboard() {
                 onChange={(e) => setForm({ ...form, severeWeatherRequired: e.target.checked })}
               />
               Require severe weather
-            </label>
-            <label>
-              <input
-                type="checkbox"
-                checked={form.smsEnabled}
-                onChange={(e) => setForm({ ...form, smsEnabled: e.target.checked })}
-              />
-              SMS enabled
             </label>
             <label>
               <input
@@ -459,7 +463,7 @@ export function AlertDashboard() {
                   <p>{alert.originAddress} to {alert.destinationAddress}</p>
                   <p>
                     Window: {alert.startTime}-{alert.endTime} | Threshold: {alert.maxDurationMinutes ?? "n/a"}m |
-                    Delay: {alert.minDelayMinutes ?? "n/a"}m
+                    Extra delay: {alert.minDelayMinutes ?? "n/a"}m
                   </p>
                   <p>
                     Rapid rise: {alert.rapidIncreaseEnabled ? "On" : "Off"} | Min rise: {alert.rapidIncreaseMinRiseMinutes}m |
@@ -526,7 +530,7 @@ function CommuteSectionEditor({
       </div>
       <div className="grid3">
         <label>
-          Delay threshold (minutes)
+          Extra delay threshold (minutes)
           <input
             type="number"
             min={0}

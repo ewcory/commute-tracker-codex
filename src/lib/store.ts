@@ -19,9 +19,7 @@ export type Alert = {
   rapidIncreaseEnabled: boolean;
   rapidIncreaseMinRiseMinutes: number;
   rapidIncreaseLookaheadMinutes: number;
-  smsEnabled: boolean;
   pushEnabled: boolean;
-  smsPhoneNumber: string | null;
   lastNotifiedAt: string | null;
   lastTriggeredAt: string | null;
   consecutiveTriggerCount: number;
@@ -68,9 +66,7 @@ type AlertRow = {
   rapid_increase_enabled: boolean;
   rapid_increase_min_rise_minutes: number;
   rapid_increase_lookahead_minutes: number;
-  sms_enabled: boolean;
   push_enabled: boolean;
-  sms_phone_number: string | null;
   last_notified_at: Date | null;
   last_triggered_at: Date | null;
   consecutive_trigger_count: number;
@@ -172,9 +168,7 @@ async function ensureSchema(): Promise<void> {
             rapid_increase_enabled BOOLEAN NOT NULL DEFAULT TRUE,
             rapid_increase_min_rise_minutes INTEGER NOT NULL DEFAULT 5,
             rapid_increase_lookahead_minutes INTEGER NOT NULL DEFAULT 20,
-            sms_enabled BOOLEAN NOT NULL DEFAULT FALSE,
             push_enabled BOOLEAN NOT NULL DEFAULT TRUE,
-            sms_phone_number TEXT NULL,
             last_notified_at TIMESTAMPTZ NULL,
             last_triggered_at TIMESTAMPTZ NULL,
             consecutive_trigger_count INTEGER NOT NULL DEFAULT 0,
@@ -237,9 +231,7 @@ function mapAlert(row: AlertRow): Alert {
     rapidIncreaseEnabled: row.rapid_increase_enabled,
     rapidIncreaseMinRiseMinutes: row.rapid_increase_min_rise_minutes,
     rapidIncreaseLookaheadMinutes: row.rapid_increase_lookahead_minutes,
-    smsEnabled: row.sms_enabled,
     pushEnabled: row.push_enabled,
-    smsPhoneNumber: row.sms_phone_number,
     lastNotifiedAt: row.last_notified_at ? row.last_notified_at.toISOString() : null,
     lastTriggeredAt: row.last_triggered_at ? row.last_triggered_at.toISOString() : null,
     consecutiveTriggerCount: row.consecutive_trigger_count,
@@ -353,15 +345,15 @@ export async function createAlert(input: Omit<Alert, "id" | "createdAt" | "updat
       id, user_id, name, origin_address, destination_address, enabled, max_duration_minutes, min_delay_minutes,
       severe_weather_required, incident_keyword_filter, days_of_week_csv, start_time, end_time,
       cooldown_minutes, min_consecutive_triggers, rapid_increase_enabled, rapid_increase_min_rise_minutes,
-      rapid_increase_lookahead_minutes, sms_enabled, push_enabled, sms_phone_number,
+      rapid_increase_lookahead_minutes, push_enabled,
       last_notified_at, last_triggered_at, consecutive_trigger_count
     ) VALUES (
       ${id}, ${input.userId}, ${input.name}, ${input.originAddress}, ${input.destinationAddress}, ${input.enabled},
       ${input.maxDurationMinutes}, ${input.minDelayMinutes}, ${input.severeWeatherRequired},
       ${input.incidentKeywordFilter}, ${input.daysOfWeekCsv}, ${input.startTime}, ${input.endTime},
-      ${input.cooldownMinutes}, ${input.minConsecutiveTriggers}, ${input.rapidIncreaseEnabled},
-      ${input.rapidIncreaseMinRiseMinutes}, ${input.rapidIncreaseLookaheadMinutes}, ${input.smsEnabled},
-      ${input.pushEnabled}, ${input.smsPhoneNumber}, ${input.lastNotifiedAt}, ${input.lastTriggeredAt},
+      ${input.cooldownMinutes}, ${input.minConsecutiveTriggers},
+      ${input.rapidIncreaseEnabled}, ${input.rapidIncreaseMinRiseMinutes},
+      ${input.rapidIncreaseLookaheadMinutes}, ${input.pushEnabled}, ${input.lastNotifiedAt}, ${input.lastTriggeredAt},
       ${input.consecutiveTriggerCount}
     )
     RETURNING *
@@ -408,9 +400,7 @@ export async function updateAlertForUser(
       rapid_increase_enabled = ${next.rapidIncreaseEnabled},
       rapid_increase_min_rise_minutes = ${next.rapidIncreaseMinRiseMinutes},
       rapid_increase_lookahead_minutes = ${next.rapidIncreaseLookaheadMinutes},
-      sms_enabled = ${next.smsEnabled},
       push_enabled = ${next.pushEnabled},
-      sms_phone_number = ${next.smsPhoneNumber},
       last_notified_at = ${next.lastNotifiedAt},
       last_triggered_at = ${next.lastTriggeredAt},
       consecutive_trigger_count = ${next.consecutiveTriggerCount},

@@ -40,8 +40,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         ? current.rapidIncreaseLookaheadMinutes
         : data.rapidIncreaseLookaheadMinutes,
     incidentKeywordFilter:
-      data.incidentKeywordFilter === undefined ? current.incidentKeywordFilter : data.incidentKeywordFilter,
-    smsPhoneNumber: data.smsPhoneNumber === undefined ? current.smsPhoneNumber : data.smsPhoneNumber
+      data.incidentKeywordFilter === undefined ? current.incidentKeywordFilter : data.incidentKeywordFilter
   }));
   if (!updated) {
     return NextResponse.json({ error: "Alert not found" }, { status: 404 });

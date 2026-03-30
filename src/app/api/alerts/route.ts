@@ -63,9 +63,7 @@ export async function POST(req: NextRequest) {
       rapidIncreaseEnabled: data.rapidIncreaseEnabled ?? true,
       rapidIncreaseMinRiseMinutes: data.rapidIncreaseMinRiseMinutes ?? 5,
       rapidIncreaseLookaheadMinutes: data.rapidIncreaseLookaheadMinutes ?? 20,
-      smsEnabled: data.smsEnabled ?? false,
       pushEnabled: data.pushEnabled ?? true,
-      smsPhoneNumber: data.smsPhoneNumber ?? null,
       lastNotifiedAt: null,
       lastTriggeredAt: null,
       consecutiveTriggerCount: 0

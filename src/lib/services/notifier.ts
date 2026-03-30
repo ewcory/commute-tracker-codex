@@ -1,26 +1,3 @@
-import twilio from "twilio";
-
-export async function sendSmsIfEnabled(phoneNumber: string | null, message: string): Promise<void> {
-  if (!phoneNumber) {
-    return;
-  }
-
-  const sid = process.env.TWILIO_ACCOUNT_SID;
-  const authToken = process.env.TWILIO_AUTH_TOKEN;
-  const fromPhone = process.env.TWILIO_FROM_PHONE;
-
-  if (!sid || !authToken || !fromPhone) {
-    return;
-  }
-
-  const client = twilio(sid, authToken);
-  await client.messages.create({
-    to: phoneNumber,
-    from: fromPhone,
-    body: message
-  });
-}
-
 export async function sendPushNotification(message: string): Promise<void> {
   const topic = process.env.NTFY_TOPIC;
   if (!topic) {

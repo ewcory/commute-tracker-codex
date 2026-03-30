@@ -1,6 +1,6 @@
 import { getTrafficIncidents } from "@/lib/services/incidents";
 import { getCommuteSnapshot } from "@/lib/services/googleMaps";
-import { sendPushNotification, sendSmsIfEnabled } from "@/lib/services/notifier";
+import { sendPushNotification } from "@/lib/services/notifier";
 import { getSevereWeatherForAddress } from "@/lib/services/weather";
 import { addCheck, Alert, listAlerts, listRecentChecksByAlertId, updateAlertForUser } from "@/lib/store";
 import { isNowInWindow, weekdayNumber } from "@/lib/time";
@@ -139,9 +139,6 @@ export async function runCheckForSingleAlert(alert: Alert, now = new Date()): Pr
       `Reason: ${reasons.join("; ")}`
     ].join(" ");
 
-    if (alert.smsEnabled) {
-      await sendSmsIfEnabled(alert.smsPhoneNumber, message);
-    }
     if (alert.pushEnabled) {
       await sendPushNotification(message);
     }
