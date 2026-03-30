@@ -16,6 +16,9 @@ export type Alert = {
   endTime: string;
   cooldownMinutes: number;
   minConsecutiveTriggers: number;
+  rapidIncreaseEnabled: boolean;
+  rapidIncreaseMinRiseMinutes: number;
+  rapidIncreaseLookaheadMinutes: number;
   smsEnabled: boolean;
   pushEnabled: boolean;
   smsPhoneNumber: string | null;
@@ -62,6 +65,9 @@ type AlertRow = {
   end_time: string;
   cooldown_minutes: number;
   min_consecutive_triggers: number;
+  rapid_increase_enabled: boolean;
+  rapid_increase_min_rise_minutes: number;
+  rapid_increase_lookahead_minutes: number;
   sms_enabled: boolean;
   push_enabled: boolean;
   sms_phone_number: string | null;
@@ -163,6 +169,9 @@ async function ensureSchema(): Promise<void> {
             end_time TEXT NOT NULL DEFAULT '10:00',
             cooldown_minutes INTEGER NOT NULL DEFAULT 45,
             min_consecutive_triggers INTEGER NOT NULL DEFAULT 1,
+            rapid_increase_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+            rapid_increase_min_rise_minutes INTEGER NOT NULL DEFAULT 5,
+            rapid_increase_lookahead_minutes INTEGER NOT NULL DEFAULT 20,
             sms_enabled BOOLEAN NOT NULL DEFAULT FALSE,
             push_enabled BOOLEAN NOT NULL DEFAULT TRUE,
             sms_phone_number TEXT NULL,
@@ -174,6 +183,9 @@ async function ensureSchema(): Promise<void> {
           );
         `);
         await tx.unsafe(`ALTER TABLE alerts ADD COLUMN IF NOT EXISTS user_id TEXT NULL REFERENCES users(id) ON DELETE CASCADE;`);
+        await tx.unsafe(`ALTER TABLE alerts ADD COLUMN IF NOT EXISTS rapid_increase_enabled BOOLEAN NOT NULL DEFAULT TRUE;`);
+        await tx.unsafe(`ALTER TABLE alerts ADD COLUMN IF NOT EXISTS rapid_increase_min_rise_minutes INTEGER NOT NULL DEFAULT 5;`);
+        await tx.unsafe(`ALTER TABLE alerts ADD COLUMN IF NOT EXISTS rapid_increase_lookahead_minutes INTEGER NOT NULL DEFAULT 20;`);
         await tx.unsafe(`CREATE INDEX IF NOT EXISTS idx_alerts_user_id ON alerts(user_id);`);
 
         await tx.unsafe(`
@@ -222,6 +234,9 @@ function mapAlert(row: AlertRow): Alert {
     endTime: row.end_time,
     cooldownMinutes: row.cooldown_minutes,
     minConsecutiveTriggers: row.min_consecutive_triggers,
+    rapidIncreaseEnabled: row.rapid_increase_enabled,
+    rapidIncreaseMinRiseMinutes: row.rapid_increase_min_rise_minutes,
+    rapidIncreaseLookaheadMinutes: row.rapid_increase_lookahead_minutes,
     smsEnabled: row.sms_enabled,
     pushEnabled: row.push_enabled,
     smsPhoneNumber: row.sms_phone_number,
@@ -337,13 +352,15 @@ export async function createAlert(input: Omit<Alert, "id" | "createdAt" | "updat
     INSERT INTO alerts (
       id, user_id, name, origin_address, destination_address, enabled, max_duration_minutes, min_delay_minutes,
       severe_weather_required, incident_keyword_filter, days_of_week_csv, start_time, end_time,
-      cooldown_minutes, min_consecutive_triggers, sms_enabled, push_enabled, sms_phone_number,
+      cooldown_minutes, min_consecutive_triggers, rapid_increase_enabled, rapid_increase_min_rise_minutes,
+      rapid_increase_lookahead_minutes, sms_enabled, push_enabled, sms_phone_number,
       last_notified_at, last_triggered_at, consecutive_trigger_count
     ) VALUES (
       ${id}, ${input.userId}, ${input.name}, ${input.originAddress}, ${input.destinationAddress}, ${input.enabled},
       ${input.maxDurationMinutes}, ${input.minDelayMinutes}, ${input.severeWeatherRequired},
       ${input.incidentKeywordFilter}, ${input.daysOfWeekCsv}, ${input.startTime}, ${input.endTime},
-      ${input.cooldownMinutes}, ${input.minConsecutiveTriggers}, ${input.smsEnabled},
+      ${input.cooldownMinutes}, ${input.minConsecutiveTriggers}, ${input.rapidIncreaseEnabled},
+      ${input.rapidIncreaseMinRiseMinutes}, ${input.rapidIncreaseLookaheadMinutes}, ${input.smsEnabled},
       ${input.pushEnabled}, ${input.smsPhoneNumber}, ${input.lastNotifiedAt}, ${input.lastTriggeredAt},
       ${input.consecutiveTriggerCount}
     )
@@ -388,6 +405,9 @@ export async function updateAlertForUser(
       end_time = ${next.endTime},
       cooldown_minutes = ${next.cooldownMinutes},
       min_consecutive_triggers = ${next.minConsecutiveTriggers},
+      rapid_increase_enabled = ${next.rapidIncreaseEnabled},
+      rapid_increase_min_rise_minutes = ${next.rapidIncreaseMinRiseMinutes},
+      rapid_increase_lookahead_minutes = ${next.rapidIncreaseLookaheadMinutes},
       sms_enabled = ${next.smsEnabled},
       push_enabled = ${next.pushEnabled},
       sms_phone_number = ${next.smsPhoneNumber},
@@ -429,4 +449,15 @@ export async function latestCheckByAlertId(alertId: string): Promise<AlertCheck 
   const rows =
     await sql()<AlertCheckRow[]>`SELECT * FROM alert_checks WHERE alert_id = ${alertId} ORDER BY checked_at DESC LIMIT 1`;
   return rows[0] ? mapCheck(rows[0]) : null;
+}
+
+export async function listRecentChecksByAlertId(alertId: string, limit = 2): Promise<AlertCheck[]> {
+  await ensureSchema();
+  const rows = await sql()<AlertCheckRow[]>`
+    SELECT * FROM alert_checks
+    WHERE alert_id = ${alertId}
+    ORDER BY checked_at DESC
+    LIMIT ${limit}
+  `;
+  return rows.map(mapCheck);
 }

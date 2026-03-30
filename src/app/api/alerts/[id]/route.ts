@@ -29,6 +29,16 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     ...data,
     maxDurationMinutes: data.maxDurationMinutes === undefined ? current.maxDurationMinutes : data.maxDurationMinutes,
     minDelayMinutes: data.minDelayMinutes === undefined ? current.minDelayMinutes : data.minDelayMinutes,
+    rapidIncreaseEnabled:
+      data.rapidIncreaseEnabled === undefined ? current.rapidIncreaseEnabled : data.rapidIncreaseEnabled,
+    rapidIncreaseMinRiseMinutes:
+      data.rapidIncreaseMinRiseMinutes === undefined
+        ? current.rapidIncreaseMinRiseMinutes
+        : data.rapidIncreaseMinRiseMinutes,
+    rapidIncreaseLookaheadMinutes:
+      data.rapidIncreaseLookaheadMinutes === undefined
+        ? current.rapidIncreaseLookaheadMinutes
+        : data.rapidIncreaseLookaheadMinutes,
     incidentKeywordFilter:
       data.incidentKeywordFilter === undefined ? current.incidentKeywordFilter : data.incidentKeywordFilter,
     smsPhoneNumber: data.smsPhoneNumber === undefined ? current.smsPhoneNumber : data.smsPhoneNumber

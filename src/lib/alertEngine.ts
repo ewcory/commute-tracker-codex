@@ -2,7 +2,7 @@ import { getTrafficIncidents } from "@/lib/services/incidents";
 import { getCommuteSnapshot } from "@/lib/services/googleMaps";
 import { sendPushNotification, sendSmsIfEnabled } from "@/lib/services/notifier";
 import { getSevereWeatherForAddress } from "@/lib/services/weather";
-import { addCheck, Alert, listAlerts, updateAlertForUser } from "@/lib/store";
+import { addCheck, Alert, listAlerts, listRecentChecksByAlertId, updateAlertForUser } from "@/lib/store";
 import { isNowInWindow, weekdayNumber } from "@/lib/time";
 
 type CheckResult = {
@@ -61,6 +61,25 @@ export async function runCheckForSingleAlert(alert: Alert, now = new Date()): Pr
 
   if (alert.minDelayMinutes !== null && commute.delayMinutes >= alert.minDelayMinutes) {
     reasons.push(`Delay is ${commute.delayMinutes}m (threshold ${alert.minDelayMinutes}m)`);
+  }
+
+  if (alert.rapidIncreaseEnabled && alert.maxDurationMinutes !== null) {
+    const recent = await listRecentChecksByAlertId(alert.id, 1);
+    const previous = recent[0];
+    if (previous) {
+      const prevMinutes = previous.travelDurationMinutes;
+      const prevCheckedAt = new Date(previous.checkedAt);
+      const minutesBetweenChecks = Math.max(1, (now.getTime() - prevCheckedAt.getTime()) / 60000);
+      const rise = commute.trafficMinutes - prevMinutes;
+      const risePerMinute = rise / minutesBetweenChecks;
+      const projected = Math.round(commute.trafficMinutes + risePerMinute * alert.rapidIncreaseLookaheadMinutes);
+
+      if (rise >= alert.rapidIncreaseMinRiseMinutes && projected >= alert.maxDurationMinutes) {
+        reasons.push(
+          `Rapid rise: +${rise}m since last check, projected ${projected}m in ${alert.rapidIncreaseLookaheadMinutes}m`
+        );
+      }
+    }
   }
 
   if (alert.severeWeatherRequired) {
