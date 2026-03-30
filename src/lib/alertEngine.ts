@@ -42,6 +42,16 @@ export async function runChecksForAllAlerts(now = new Date()): Promise<CheckResu
 
 export async function runCheckForSingleAlert(alert: Alert, now = new Date()): Promise<CheckResult> {
   if (!isAlertActiveByTime(alert, now)) {
+    await addCheck({
+      alertId: alert.id,
+      triggered: false,
+      triggerReasons: "Skipped: outside alert time window/day settings",
+      travelDurationMinutes: 0,
+      baselineDurationMinutes: 0,
+      delayMinutes: 0,
+      weatherSummary: "Skipped",
+      incidentSummary: "Skipped"
+    });
     return {
       alertId: alert.id,
       checked: false,

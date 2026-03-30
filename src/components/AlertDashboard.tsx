@@ -261,11 +261,15 @@ export function AlertDashboard() {
   async function checkNow() {
     setStatus("Running alert checks now...");
     try {
-      const data = await jsonFetch<{ results: Array<{ triggered: boolean }> }>("/api/check-now", {
+      const data = await jsonFetch<{ results: Array<{ checked: boolean; triggered: boolean }> }>("/api/check-now", {
         method: "POST"
       });
       const triggeredCount = data.results.filter((r) => r.triggered).length;
-      setStatus(`Check complete. ${triggeredCount} alert(s) triggered.`);
+      const checkedCount = data.results.filter((r) => r.checked).length;
+      const skippedCount = data.results.length - checkedCount;
+      setStatus(
+        `Check complete. Checked: ${checkedCount}, skipped: ${skippedCount}, triggered: ${triggeredCount}.`
+      );
       await loadAlerts();
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Check failed");
