@@ -35,6 +35,23 @@ type AppUser = {
   username: string;
 };
 
+type AlertEditDraft = {
+  name: string;
+  startTime: string;
+  endTime: string;
+  maxDurationMinutes: string;
+  minDelayMinutes: string;
+  rapidIncreaseEnabled: boolean;
+  rapidIncreaseMinRiseMinutes: string;
+  rapidIncreaseLookaheadMinutes: string;
+  daysOfWeek: number[];
+  incidentKeywordFilter: string;
+  severeWeatherRequired: boolean;
+  cooldownMinutes: string;
+  minConsecutiveTriggers: string;
+  pushEnabled: boolean;
+};
+
 type CommuteSection = {
   startTime: string;
   endTime: string;
@@ -121,6 +138,8 @@ export function AlertDashboard() {
   const [form, setForm] = useState<SetupForm>(defaultForm);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("Loading...");
+  const [editingAlertId, setEditingAlertId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState<AlertEditDraft | null>(null);
 
   async function loadAuthAndAlerts() {
     try {
@@ -256,6 +275,78 @@ export function AlertDashboard() {
     }
     await jsonFetch(`/api/alerts/${alert.id}`, { method: "DELETE" });
     await loadAlerts();
+  }
+
+  function beginEdit(alert: Alert) {
+    setEditingAlertId(alert.id);
+    setEditDraft({
+      name: alert.name,
+      startTime: alert.startTime,
+      endTime: alert.endTime,
+      maxDurationMinutes: alert.maxDurationMinutes?.toString() ?? "",
+      minDelayMinutes: alert.minDelayMinutes?.toString() ?? "",
+      rapidIncreaseEnabled: alert.rapidIncreaseEnabled,
+      rapidIncreaseMinRiseMinutes: alert.rapidIncreaseMinRiseMinutes.toString(),
+      rapidIncreaseLookaheadMinutes: alert.rapidIncreaseLookaheadMinutes.toString(),
+      daysOfWeek: parseDaysCsv(alert.daysOfWeekCsv),
+      incidentKeywordFilter: alert.incidentKeywordFilter ?? "",
+      severeWeatherRequired: alert.severeWeatherRequired,
+      cooldownMinutes: alert.cooldownMinutes.toString(),
+      minConsecutiveTriggers: alert.minConsecutiveTriggers.toString(),
+      pushEnabled: alert.pushEnabled
+    });
+  }
+
+  function cancelEdit() {
+    setEditingAlertId(null);
+    setEditDraft(null);
+  }
+
+  function toggleEditDay(day: number) {
+    if (!editDraft) return;
+    const selected = editDraft.daysOfWeek.includes(day);
+    const nextDays = selected
+      ? editDraft.daysOfWeek.filter((d) => d !== day)
+      : [...editDraft.daysOfWeek, day];
+    setEditDraft({ ...editDraft, daysOfWeek: nextDays });
+  }
+
+  async function saveEdit(alertId: string) {
+    if (!editDraft) return;
+    if (editDraft.daysOfWeek.length === 0) {
+      setStatus("Please select at least one active day.");
+      return;
+    }
+    setStatus("Saving alert changes...");
+    setLoading(true);
+    try {
+      await jsonFetch(`/api/alerts/${alertId}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          name: editDraft.name,
+          startTime: editDraft.startTime,
+          endTime: editDraft.endTime,
+          maxDurationMinutes: editDraft.maxDurationMinutes ? Number(editDraft.maxDurationMinutes) : null,
+          minDelayMinutes: editDraft.minDelayMinutes ? Number(editDraft.minDelayMinutes) : null,
+          rapidIncreaseEnabled: editDraft.rapidIncreaseEnabled,
+          rapidIncreaseMinRiseMinutes: Number(editDraft.rapidIncreaseMinRiseMinutes),
+          rapidIncreaseLookaheadMinutes: Number(editDraft.rapidIncreaseLookaheadMinutes),
+          daysOfWeekCsv: [...editDraft.daysOfWeek].sort((a, b) => a - b).join(","),
+          incidentKeywordFilter: editDraft.incidentKeywordFilter || null,
+          severeWeatherRequired: editDraft.severeWeatherRequired,
+          cooldownMinutes: Number(editDraft.cooldownMinutes),
+          minConsecutiveTriggers: Number(editDraft.minConsecutiveTriggers),
+          pushEnabled: editDraft.pushEnabled
+        })
+      });
+      setStatus("Alert updated.");
+      cancelEdit();
+      await loadAlerts();
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Could not save alert changes");
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function checkNow() {
@@ -483,11 +574,198 @@ export function AlertDashboard() {
                   {alert.checks?.[0] ? <p>Reason: {alert.checks[0].triggerReasons}</p> : null}
                 </div>
                 <div className="row">
+                  <button type="button" onClick={() => beginEdit(alert)}>
+                    Edit
+                  </button>
                   <button type="button" onClick={() => toggleAlert(alert)}>
                     {alert.enabled ? "Disable" : "Enable"}
                   </button>
                   <button type="button" onClick={() => deleteAlert(alert)}>Delete</button>
                 </div>
+                {editingAlertId === alert.id && editDraft ? (
+                  <div className="card">
+                    <h3>Edit Alert</h3>
+                    <div className="form">
+                      <label>
+                        Alert name
+                        <input
+                          value={editDraft.name}
+                          onChange={(e) => setEditDraft({ ...editDraft, name: e.target.value })}
+                        />
+                      </label>
+                      <div className="grid3">
+                        <label>
+                          Start time
+                          <input
+                            type="time"
+                            value={editDraft.startTime}
+                            onChange={(e) => setEditDraft({ ...editDraft, startTime: e.target.value })}
+                          />
+                        </label>
+                        <label>
+                          End time
+                          <input
+                            type="time"
+                            value={editDraft.endTime}
+                            onChange={(e) => setEditDraft({ ...editDraft, endTime: e.target.value })}
+                          />
+                        </label>
+                        <label>
+                          Commute threshold (minutes)
+                          <input
+                            type="number"
+                            min={1}
+                            value={editDraft.maxDurationMinutes}
+                            onChange={(e) =>
+                              setEditDraft({ ...editDraft, maxDurationMinutes: e.target.value })
+                            }
+                          />
+                        </label>
+                      </div>
+                      <div className="grid3">
+                        <label>
+                          Extra delay threshold (minutes)
+                          <input
+                            type="number"
+                            min={0}
+                            value={editDraft.minDelayMinutes}
+                            onChange={(e) =>
+                              setEditDraft({ ...editDraft, minDelayMinutes: e.target.value })
+                            }
+                          />
+                        </label>
+                        <label>
+                          Min rise since last check
+                          <input
+                            type="number"
+                            min={1}
+                            value={editDraft.rapidIncreaseMinRiseMinutes}
+                            onChange={(e) =>
+                              setEditDraft({
+                                ...editDraft,
+                                rapidIncreaseMinRiseMinutes: e.target.value
+                              })
+                            }
+                          />
+                        </label>
+                        <label>
+                          Lookahead minutes
+                          <input
+                            type="number"
+                            min={5}
+                            value={editDraft.rapidIncreaseLookaheadMinutes}
+                            onChange={(e) =>
+                              setEditDraft({
+                                ...editDraft,
+                                rapidIncreaseLookaheadMinutes: e.target.value
+                              })
+                            }
+                          />
+                        </label>
+                      </div>
+                      <div>
+                        <p><strong>Active days</strong></p>
+                        <div className="row">
+                          {dayOptions.map((day) => (
+                            <label key={day.value}>
+                              <input
+                                type="checkbox"
+                                checked={editDraft.daysOfWeek.includes(day.value)}
+                                onChange={() => toggleEditDay(day.value)}
+                              />
+                              {day.label}
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="grid3">
+                        <label>
+                          Cooldown minutes
+                          <input
+                            type="number"
+                            min={1}
+                            value={editDraft.cooldownMinutes}
+                            onChange={(e) =>
+                              setEditDraft({ ...editDraft, cooldownMinutes: e.target.value })
+                            }
+                          />
+                        </label>
+                        <label>
+                          Consecutive checks required
+                          <input
+                            type="number"
+                            min={1}
+                            value={editDraft.minConsecutiveTriggers}
+                            onChange={(e) =>
+                              setEditDraft({
+                                ...editDraft,
+                                minConsecutiveTriggers: e.target.value
+                              })
+                            }
+                          />
+                        </label>
+                        <label>
+                          Bay Bridge keyword
+                          <input
+                            value={editDraft.incidentKeywordFilter}
+                            onChange={(e) =>
+                              setEditDraft({
+                                ...editDraft,
+                                incidentKeywordFilter: e.target.value
+                              })
+                            }
+                          />
+                        </label>
+                      </div>
+                      <div className="checkboxes">
+                        <label>
+                          <input
+                            type="checkbox"
+                            checked={editDraft.rapidIncreaseEnabled}
+                            onChange={(e) =>
+                              setEditDraft({
+                                ...editDraft,
+                                rapidIncreaseEnabled: e.target.checked
+                              })
+                            }
+                          />
+                          Enable rapid-increase prediction
+                        </label>
+                        <label>
+                          <input
+                            type="checkbox"
+                            checked={editDraft.severeWeatherRequired}
+                            onChange={(e) =>
+                              setEditDraft({
+                                ...editDraft,
+                                severeWeatherRequired: e.target.checked
+                              })
+                            }
+                          />
+                          Require severe weather
+                        </label>
+                        <label>
+                          <input
+                            type="checkbox"
+                            checked={editDraft.pushEnabled}
+                            onChange={(e) =>
+                              setEditDraft({ ...editDraft, pushEnabled: e.target.checked })
+                            }
+                          />
+                          Push enabled
+                        </label>
+                      </div>
+                      <div className="row">
+                        <button type="button" onClick={() => saveEdit(alert.id)} disabled={loading}>
+                          Save Changes
+                        </button>
+                        <button type="button" onClick={cancelEdit}>
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
               </li>
             ))}
           </ul>
@@ -495,6 +773,13 @@ export function AlertDashboard() {
       </section>
     </main>
   );
+}
+
+function parseDaysCsv(csv: string): number[] {
+  return csv
+    .split(",")
+    .map((v) => Number.parseInt(v.trim(), 10))
+    .filter((v) => Number.isInteger(v) && v >= 1 && v <= 7);
 }
 
 function CommuteSectionEditor({
