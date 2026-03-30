@@ -12,9 +12,10 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    const tz = process.env.ALERT_TIMEZONE || "America/Los_Angeles";
     await sendPushNotification(
       `Test message from Commute Tracker at ${new Date().toLocaleString("en-US", {
-        timeZone: "America/Los_Angeles"
+        timeZone: tz
       })}.`
     );
     return NextResponse.json({ ok: true });

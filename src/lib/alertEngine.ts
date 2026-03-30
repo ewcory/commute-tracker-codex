@@ -12,17 +12,19 @@ type CheckResult = {
   reasons: string[];
 };
 
+const ALERT_TIMEZONE = process.env.ALERT_TIMEZONE || "America/Los_Angeles";
+
 function isAlertActiveByTime(alert: Alert, now: Date): boolean {
   const days = alert.daysOfWeekCsv
     .split(",")
     .map((v) => Number.parseInt(v.trim(), 10))
     .filter((v) => Number.isInteger(v) && v >= 1 && v <= 7);
 
-  if (!days.includes(weekdayNumber(now))) {
+  if (!days.includes(weekdayNumber(now, ALERT_TIMEZONE))) {
     return false;
   }
 
-  return isNowInWindow(alert.startTime, alert.endTime, now);
+  return isNowInWindow(alert.startTime, alert.endTime, now, ALERT_TIMEZONE);
 }
 
 function minutesSince(date: Date, now: Date): number {

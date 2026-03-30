@@ -32,6 +32,7 @@ Fill in your keys in `.env.local`:
 - `NTFY_TOPIC` (optional, for push)
 - `NTFY_BASE_URL` (optional, defaults to `https://ntfy.sh`)
 - `NTFY_ACCESS_TOKEN` (optional if using authenticated ntfy server)
+- `ALERT_TIMEZONE` (recommended, e.g. `America/Los_Angeles`)
 
 Install dependencies:
 
